@@ -5,6 +5,7 @@ import App from './App.vue'
 import Users from './Users.vue'
 import Gauge from './Gauge.vue'
 import Home from './Home.vue'
+import BaiduMap from './BaiduMap.vue'
 //import Plotly from './Plotly.vue'
 
 Vue.use(VueMaterial)
@@ -14,6 +15,7 @@ const routes = [
   { path: '/users', component: Users },
   { path: '/', component: Home },
   { path: '/Gauge', component: Gauge },
+  { path: '/BaiduMap', component: BaiduMap },
 //  { path: '/Plotly', component: Plotly },
 ]
 
@@ -50,7 +52,7 @@ Vue.config.devtools = true;
 
 
 new Vue({
-  el: '#app', 
+  el: '#app',
   components: {
 
   },
