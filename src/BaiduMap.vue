@@ -10,9 +10,9 @@ export default {
   data() {
     return {
       points: [
-        {x: 116.399, y: 39.910},
-        {x: 116.405, y: 39.920},
-        {x: 116.423493, y: 39.907445},
+        [116.399, 39.910],
+        [116.405, 39.920],
+        [116.423493, 39.907445]
       ]
     }
   },
@@ -32,48 +32,73 @@ export default {
   methods: {
     mapReady(BMap) {
       if (this.points) {
-        var map = new BMap.Map('map')
-        var center = this.getCenter(this.points)
-        console.log(center)
-        map.centerAndZoom(new BMap.Point(center.x, center.y), 15)
-        map.enableScrollWheelZoom()
+        this.convertPoints(this.points, BMap).then(({points}) => {
+          var map = new BMap.Map('map')
+          var center = this.getCenter(points, BMap)
+          map.centerAndZoom(center, 15)
+          map.enableScrollWheelZoom()
 
-        for (let i = 0; i < this.points.length; i++) {
-          const prev = this.points[i - 1]
-          if (prev) {
-            const current = this.points[i]
-            const polyline = new BMap.Polyline([
-              new BMap.Point(prev.x, prev.y),
-              new BMap.Point(current.x, current.y),
-            ], {strokeColor: 'blue', strokeWeight: 2, strokeOpacity: 0.5})   // 创建折线
-            map.addOverlay(polyline)   // 增加折线
+          for (let i = 0; i < points.length; i++) {
+            const prev = points[i - 1]
+            if (prev) {
+              const current = points[i]
+              const polyline = new BMap.Polyline([
+                prev,
+                current,
+              ], {strokeColor: 'blue', strokeWeight: 2, strokeOpacity: 0.5})   // 创建折线
+              map.addOverlay(polyline)   // 增加折线
+            }
           }
-        }
+        })
       }
     },
-    getCenter(points) {
-      let maxX = points[0].x
-      let maxY = points[0].y
-      let minX = points[0].x
-      let minY = points[0].y
+    getCenter(points, BMap) {
+      let maxX = points[0].lng
+      let maxY = points[0].lat
+      let minX = points[0].lng
+      let minY = points[0].lat
       for (const p of points) {
-        if (p.x < minX) {
-          minX = p.x
+        if (p.lng < minX) {
+          minX = p.lng
         }
-        if (p.x > maxX) {
-          maxX = p.x
+        if (p.lng > maxX) {
+          maxX = p.lng
         }
-        if (p.y < minY) {
-          minY = p.y
+        if (p.lat < minY) {
+          minY = p.lat
         }
-        if (p.y > maxY) {
-          maxY = p.y
+        if (p.lat > maxY) {
+          maxY = p.lat
         }
       }
-      return {
-        x: (maxX + minX) / 2,
-        y: (maxY + minY) / 2,
+      return new BMap.Point((maxX + minX) / 2, (maxY + minY) / 2)
+    },
+    convertPoints(points, BMap) {
+      const convertor = new BMap.Convertor()
+      //
+      const BMapPoints = []
+      for (const point of points) {
+        BMapPoints.push(new BMap.Point(point[0], point[1]))
       }
+      //
+      const promises = []
+      const n = 100
+      for (let i = 0, j = 0; j < points.length; i++, j += n) {
+        promises.push(new Promise((resolve, reject) => {
+          const start = i * n
+          const end = start + n
+          convertor.translate(BMapPoints.slice(start, end), 1, 5, (data) => { resolve(data) })
+        }))
+      }
+      return Promise.all(promises).then((datas) => {
+        const resultPoints = []
+        for (const data of datas) {
+          for (const point of data.points) {
+            resultPoints.push(point)
+          }
+        }
+        return { points: resultPoints, dataArr: datas }
+      })
     }
   }
 }
